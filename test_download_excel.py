@@ -450,6 +450,17 @@ def download_excel_only() -> str:
                 driver.quit()
             return None
         
+        # Проверяем важные cookies авторизации перед переходом
+        important_cookies = ['WILDAUTHNEW_V3', 'WBToken', 'x-supplier-id', 'WBUID']
+        current_cookies_after_load = driver.get_cookies()
+        cookie_names = [c.get('name') for c in current_cookies_after_load]
+        found_important = [name for name in important_cookies if name in cookie_names]
+        print(f"[DEBUG] Важные cookies после загрузки: {found_important if found_important else 'НЕ НАЙДЕНЫ!'}")
+        
+        if not found_important:
+            print("[WARN] Важные cookies авторизации не найдены после загрузки!")
+            print("[DEBUG] Найденные cookies:", [c.get('name') for c in current_cookies_after_load[:10]])
+        
         # Переходим на страницу цен
         print(f"[INFO] Перехожу на страницу цен: {wb_prices_url}")
         driver.get(wb_prices_url)
@@ -459,30 +470,70 @@ def download_excel_only() -> str:
         current_url = driver.current_url.lower()
         if not check_authorization(driver) or ("login" in current_url or "auth" in current_url):
             print("[WARN] После перехода обнаружена страница авторизации")
-            print("[INFO] Пробую перезагрузить cookies и повторить переход...")
+            print(f"[DEBUG] Текущий URL: {driver.current_url}")
             
-            # Пробуем еще раз загрузить cookies
+            # Пробуем еще раз загрузить cookies, но теперь с seller.wildberries.ru
             if cookies_file.exists():
                 try:
                     import pickle
-                    driver.get(wb_base_url)
-                    time.sleep(2)
+                    print("[INFO] Пробую перезагрузить cookies на seller.wildberries.ru...")
+                    
+                    # Сначала открываем seller.wildberries.ru
+                    driver.get("https://seller.wildberries.ru")
+                    time.sleep(3)
+                    
+                    # Добавляем cookies на правильном домене
                     with open(cookies_file, 'rb') as f:
                         cookies = pickle.load(f)
-                        for cookie in cookies:
-                            try:
-                                driver.add_cookie(cookie)
-                            except:
-                                pass
+                    
+                    added_reload = 0
+                    for cookie in cookies:
+                        try:
+                            # Проверяем expiry
+                            if 'expiry' in cookie and cookie['expiry']:
+                                if isinstance(cookie['expiry'], (int, float)) and cookie['expiry'] < time.time():
+                                    continue
+                            
+                            # Исправляем домен для seller.wildberries.ru
+                            cookie_dict = {
+                                'name': cookie.get('name'),
+                                'value': cookie.get('value'),
+                                'domain': '.wildberries.ru',  # Всегда используем .wildberries.ru
+                                'path': cookie.get('path', '/'),
+                            }
+                            if 'expiry' in cookie:
+                                cookie_dict['expiry'] = cookie['expiry']
+                            if 'secure' in cookie:
+                                cookie_dict['secure'] = cookie['secure']
+                            if 'httpOnly' in cookie:
+                                cookie_dict['httpOnly'] = cookie['httpOnly']
+                            
+                            driver.add_cookie(cookie_dict)
+                            added_reload += 1
+                        except Exception as e:
+                            pass
+                    
+                    print(f"[DEBUG] Перезагружено cookies: {added_reload}")
+                    
+                    # Обновляем страницу
                     driver.refresh()
-                    time.sleep(3)
+                    time.sleep(5)
+                    
+                    # Проверяем важные cookies после перезагрузки
+                    cookies_after_reload = driver.get_cookies()
+                    reload_cookie_names = [c.get('name') for c in cookies_after_reload]
+                    found_reload = [name for name in important_cookies if name in reload_cookie_names]
+                    print(f"[DEBUG] Важные cookies после перезагрузки: {found_reload if found_reload else 'НЕ НАЙДЕНЫ!'}")
                     
                     # Пробуем снова перейти на страницу цен
                     driver.get(wb_prices_url)
                     time.sleep(5)
                     current_url = driver.current_url.lower()
-                except:
-                    pass
+                    print(f"[DEBUG] URL после повторного перехода: {driver.current_url}")
+                except Exception as e:
+                    print(f"[DEBUG] Ошибка при перезагрузке cookies: {e}")
+                    import traceback
+                    traceback.print_exc()
             
             # Если все еще на странице авторизации - даем возможность авторизоваться вручную
             if "login" in current_url or "auth" in current_url:
