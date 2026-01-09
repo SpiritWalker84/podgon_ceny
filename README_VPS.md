@@ -38,20 +38,26 @@ tar -xzf wb_project.tar.gz
 cd podgon_ceny  # или ваша директория
 ```
 
-### 4. Настройте окружение
+### 4. Настройте виртуальное окружение (ОБЯЗАТЕЛЬНО)
 
 ```bash
 # Создайте виртуальное окружение
 python3 -m venv venv
+
+# Активируйте окружение
 source venv/bin/activate
 
-# Установите зависимости
+# Обновите pip
 pip install --upgrade pip
+
+# Установите зависимости
 pip install selenium openpyxl requests python-dotenv
 
 # Создайте .env файл
 cp .env.example .env
 nano .env
+
+# Важно: Всегда активируйте venv перед запуском скриптов!
 ```
 
 **Важные настройки в .env:**
@@ -69,25 +75,57 @@ BASE_DIR=~/wildberries/price  # Директория с CSV файлами (bran
 ### 5. Тестирование
 
 ```bash
-# Активируйте виртуальное окружение
+# Перейдите в директорию проекта
+cd /home/user/podgon_ceny
+
+# Активируйте виртуальное окружение (ОБЯЗАТЕЛЬНО!)
 source venv/bin/activate
 
+# Проверьте что окружение активировано (должен быть префикс (venv))
 # Запустите скрипт
 python3 update_wb_prices_from_template.py
+
+# После работы можете деактивировать (опционально)
+# deactivate
 ```
 
 ### 6. Настройка автоматического запуска
 
 ```bash
-# Создайте скрипт-обертку
+# Создайте скрипт-обертку с проверкой виртуального окружения
 cat > /home/user/podgon_ceny/run_update.sh << 'EOF'
 #!/bin/bash
-cd /home/user/podgon_ceny
+cd /home/user/podgon_ceny || exit 1
+
+# Проверяем наличие виртуального окружения
+if [ ! -d "venv" ]; then
+    echo "ОШИБКА: Виртуальное окружение не найдено!" >> logs/update_prices.log 2>&1
+    exit 1
+fi
+
+# Активируем виртуальное окружение
 source venv/bin/activate
+
+# Проверяем активацию
+if [ -z "$VIRTUAL_ENV" ]; then
+    echo "ОШИБКА: Не удалось активировать venv!" >> logs/update_prices.log 2>&1
+    exit 1
+fi
+
+# Создаем директорию логов
+mkdir -p logs
+
+# Запускаем скрипт
 python3 update_wb_prices_from_template.py >> logs/update_prices.log 2>&1
+
+EXIT_CODE=$?
+deactivate
+exit $EXIT_CODE
 EOF
 
 chmod +x /home/user/podgon_ceny/run_update.sh
+mkdir -p /home/user/podgon_ceny/logs
+```
 
 # Настройте cron (запуск каждый день в 3:00)
 crontab -e

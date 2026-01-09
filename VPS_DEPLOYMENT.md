@@ -110,14 +110,35 @@ tar -xzf ../wb_prices.tar.gz
 # Они уже есть на сервере, не нужно их копировать
 ```
 
-### 2.2 Создание виртуального окружения
+### 2.2 Создание виртуального окружения (ОБЯЗАТЕЛЬНО)
+
+**Важно:** Все скрипты должны запускаться в виртуальном окружении!
 
 ```bash
+# Создайте виртуальное окружение
 python3 -m venv venv
+
+# Активируйте окружение
 source venv/bin/activate
+
+# Обновите pip
 pip install --upgrade pip
+
+# Установите все зависимости
 pip install selenium openpyxl requests python-dotenv
+
+# Проверьте установку
+pip list
 ```
+
+**Для каждого запуска скрипта:**
+```bash
+cd /path/to/project
+source venv/bin/activate
+python3 update_wb_prices_from_template.py
+```
+
+**Или используйте скрипт-обертку (см. ниже)**
 
 ### 2.3 Настройка .env файла
 
