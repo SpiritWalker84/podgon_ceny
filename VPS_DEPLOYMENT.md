@@ -65,16 +65,23 @@ tar -czf wb_prices.tar.gz \
     test_download_excel.py \
     update_prices.py \
     update_wb_stocks_prices.py \
-    .env.example
+    .env.example \
+    README.md \
+    *.md \
+    install_vps.sh
 
 # Скопируйте на сервер
 scp wb_prices.tar.gz user@your-vps-ip:/home/user/
 
-# На сервере распакуйте
+# На сервере распакуйте в директорию проекта
 ssh user@your-vps-ip
 cd /home/user
-tar -xzf wb_prices.tar.gz
-cd podgon_ceny  # или ваша директория проекта
+mkdir -p podgon_ceny
+cd podgon_ceny
+tar -xzf ../wb_prices.tar.gz
+
+# Примечание: CSV файлы (brand_*.csv) должны находиться в ~/wildberries/price
+# Они уже есть на сервере, не нужно их копировать
 ```
 
 ### 2.2 Создание виртуального окружения
@@ -99,6 +106,9 @@ WB_API_TOKEN=ваш_токен_здесь
 
 # Директория для работы
 TARGET_DIR=/home/user/podgon_ceny
+
+# Директория с CSV файлами (на сервере)
+BASE_DIR=~/wildberries/price
 
 # Режим браузера (для VPS обязательно headless=true)
 HEADLESS_BROWSER=true

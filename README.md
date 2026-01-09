@@ -36,7 +36,8 @@ cp .env.example .env
 ```env
 WB_API_TOKEN=ваш_api_токен_wildberries
 HEADLESS_BROWSER=false  # true для Linux серверов
-TARGET_DIR=./  # Директория для работы
+TARGET_DIR=./  # Директория для работы (на сервере: ~/wildberries/price)
+BASE_DIR=./    # Базовая директория (опционально)
 ```
 
 3. Первая авторизация:

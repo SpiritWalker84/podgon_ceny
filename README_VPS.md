@@ -61,7 +61,10 @@ HEADLESS_BROWSER=true  # ОБЯЗАТЕЛЬНО для VPS
 USE_BROWSER_PROFILE=true
 BROWSER_PROFILE_PATH=/home/user/podgon_ceny/wb_browser_profile
 TARGET_DIR=/home/user/podgon_ceny
+BASE_DIR=~/wildberries/price  # Директория с CSV файлами (brand_*.csv)
 ```
+
+**Примечание:** CSV файлы (`brand_BOSCH.csv`, `brand_MANN.csv`, `brand_TRIALLI.csv`) должны находиться в `~/wildberries/price` на сервере. Они не включаются в репозиторий, так как уже есть на сервере.
 
 ### 5. Тестирование
 

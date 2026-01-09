@@ -92,7 +92,10 @@ class Config:
     # Используем текущую директорию, если TARGET_DIR не задан в .env
     default_target = str(Path.cwd())  # Текущая директория
     TARGET_DIR: Path = Path(os.getenv('TARGET_DIR', default_target))
-    BASE_DIR: Path = Path(os.getenv('BASE_DIR', str(Path.cwd())))
+    # BASE_DIR - директория с CSV файлами (на сервере обычно ~/wildberries/price)
+    # Если не указан, используем TARGET_DIR
+    base_dir_env = os.getenv('BASE_DIR', None)
+    BASE_DIR: Optional[Path] = Path(base_dir_env) if base_dir_env else None
     
     # Бренды для обработки
     BRANDS: List[str] = ['BOSCH', 'TRIALLI', 'MANN']
@@ -320,7 +323,15 @@ def read_brand_file(brand: str) -> List[Dict[str, Any]]:
     Returns:
         List[Dict[str, Any]]: Список товаров с данными
     """
-    brand_file = Config.TARGET_DIR / f"brand_{brand}.csv"
+    # Сначала ищем в BASE_DIR (для сервера: ~/wildberries/price)
+    # Если не найдено, ищем в TARGET_DIR
+    if Config.BASE_DIR and Path(Config.BASE_DIR).exists():
+        brand_file = Path(Config.BASE_DIR) / f"brand_{brand}.csv"
+        if not brand_file.exists():
+            # Пробуем в TARGET_DIR
+            brand_file = Config.TARGET_DIR / f"brand_{brand}.csv"
+    else:
+        brand_file = Config.TARGET_DIR / f"brand_{brand}.csv"
     
     if not brand_file.exists():
         print(f"  [WARN] Файл не найден: {brand_file}")
