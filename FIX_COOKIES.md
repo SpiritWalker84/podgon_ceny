@@ -23,10 +23,17 @@
    ```
 
 2. **После успешной авторизации скопируйте cookies на сервер:**
+
+   **С использованием PuTTY (pscp) и приватного ключа:**
    ```powershell
-   # Скопируйте файлы cookies
-   scp wb_cookies.pkl user@your-vps-ip:/home/rinat/podgon_ceny/
-   scp wb_cookies.pkl.storage.json user@your-vps-ip:/home/rinat/podgon_ceny/ 2>$null
+   cd C:\projects\wbB\podgon_ceny
+   "C:\Program Files\PuTTY\pscp.exe" -i "C:\b\VPS1.ppk" wb_cookies.pkl rinat@85.198.96.71:/home/rinat/podgon_ceny/
+   "C:\Program Files\PuTTY\pscp.exe" -i "C:\b\VPS1.ppk" wb_cookies.pkl.storage.json rinat@85.198.96.71:/home/rinat/podgon_ceny/
+   ```
+
+   **Или используйте готовый скрипт:**
+   ```powershell
+   .\copy_cookies_to_server.ps1
    ```
 
 ### Шаг 2: На сервере

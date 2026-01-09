@@ -1,10 +1,11 @@
 # Скрипт для копирования cookies на сервер
 # Использование: .\copy_cookies_to_server.ps1
 
-$server = "rinat@sevvinrcqf"
-$remotePath = "~/podgon_ceny/"
+$server = "rinat@85.198.96.71"
+$remotePath = "/home/rinat/podgon_ceny/"
 $localDir = "C:\projects\wbB\podgon_ceny"
 $pscp = "C:\Program Files\PuTTY\pscp.exe"
+$ppkKey = "C:\b\VPS1.ppk"  # Путь к приватному ключу PuTTY
 
 Write-Host "Копирование cookies на сервер..." -ForegroundColor Green
 
@@ -33,19 +34,25 @@ if ($foundFiles.Count -eq 0) {
     exit 1
 }
 
-# Копируем файлы
+# Копируем файлы с использованием приватного ключа
 foreach ($file in $foundFiles) {
     Write-Host "Копирование $file..." -ForegroundColor Yellow
     try {
-        & $pscp $file "${server}:${remotePath}"
+        # Используем приватный ключ PuTTY если он указан
+        if (Test-Path $ppkKey) {
+            & $pscp -i $ppkKey $file "${server}:${remotePath}"
+        } else {
+            & $pscp $file "${server}:${remotePath}"
+        }
+        
         if ($LASTEXITCODE -eq 0) {
             Write-Host "✓ $file успешно скопирован" -ForegroundColor Green
         } else {
             Write-Host "✗ Ошибка при копировании $file (код: $LASTEXITCODE)" -ForegroundColor Red
             Write-Host "Возможные причины:" -ForegroundColor Yellow
-            Write-Host "  1. Сервер недоступен или имя хоста неверное"
-            Write-Host "  2. Нет SSH подключения к серверу"
-            Write-Host "  3. Нужно использовать полный адрес (например: rinat@server.example.com)"
+            Write-Host "  1. Сервер недоступен"
+            Write-Host "  2. Неверный путь к приватному ключу: $ppkKey"
+            Write-Host "  3. Проблемы с SSH подключением"
         }
     } catch {
         Write-Host "✗ Ошибка: $_" -ForegroundColor Red
