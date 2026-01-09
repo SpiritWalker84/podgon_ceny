@@ -34,13 +34,36 @@ apt install -y chromium-browser chromium-chromedriver
 # echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list
 # apt update
 # apt install -y google-chrome-stable
-# CHROME_VERSION=$(google-chrome --version | grep -oP '\d+\.\d+\.\d+' | head -1)
-# CHROMEDRIVER_VERSION=$(curl -s "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_${CHROME_VERSION%.*}")
-# wget -q https://chromedriver.storage.googleapis.com/${CHROMEDRIVER_VERSION}/chromedriver_linux64.zip
-# unzip -q chromedriver_linux64.zip
-# mv chromedriver /usr/local/bin/
-# chmod +x /usr/local/bin/chromedriver
-# rm chromedriver_linux64.zip
+#
+# # Установка ChromeDriver для Chrome через новый Chrome for Testing API
+# CHROME_VERSION=$(google-chrome --version | grep -oP '\d+\.\d+\.\d+' | head -1 | cut -d. -f1)
+# if [ -z "$CHROME_VERSION" ]; then
+#     echo "  [WARN] Не удалось определить версию Chrome, используем последнюю"
+#     CHROME_VERSION="131"  # Примерная версия
+# fi
+# 
+# # Получаем версию ChromeDriver через Chrome for Testing API
+# CHROMEDRIVER_VERSION=$(curl -s "https://googlechromelabs.github.io/chrome-for-testing/LATEST_RELEASE_${CHROME_VERSION}")
+# if [ -z "$CHROMEDRIVER_VERSION" ] || [[ "$CHROMEDRIVER_VERSION" == *"<"* ]]; then
+#     # Если не получилось, пробуем получить последнюю стабильную версию
+#     CHROMEDRIVER_VERSION=$(curl -s "https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions.json" | grep -oP '"version": "\K[^"]+' | head -1)
+# fi
+# 
+# if [ ! -z "$CHROMEDRIVER_VERSION" ]; then
+#     echo "  [INFO] Скачиваю ChromeDriver версии $CHROMEDRIVER_VERSION..."
+#     wget -q "https://storage.googleapis.com/chrome-for-testing-public/${CHROMEDRIVER_VERSION}/linux64/chromedriver-linux64.zip" -O chromedriver_linux64.zip
+#     if [ $? -eq 0 ] && [ -f chromedriver_linux64.zip ]; then
+#         unzip -q chromedriver_linux64.zip
+#         mv chromedriver-linux64/chromedriver /usr/local/bin/
+#         chmod +x /usr/local/bin/chromedriver
+#         rm -rf chromedriver-linux64 chromedriver_linux64.zip
+#         echo "  [OK] ChromeDriver установлен"
+#     else
+#         echo "  [WARN] Не удалось скачать ChromeDriver, используйте системный chromedriver"
+#     fi
+# else
+#     echo "  [WARN] Не удалось определить версию ChromeDriver, используйте системный chromedriver"
+# fi
 
 # Установка дополнительных зависимостей для Chrome
 echo "[4/6] Установка дополнительных библиотек для Chrome..."
@@ -66,10 +89,25 @@ else
     echo "❌ Chromium не найден!"
 fi
 
+# Проверяем ChromeDriver в нескольких местах
+CHROMEDRIVER_PATH=""
 if command -v chromedriver &> /dev/null; then
-    echo "✅ ChromeDriver установлен: $(chromedriver --version | head -1)"
+    CHROMEDRIVER_PATH=$(which chromedriver)
+    echo "✅ ChromeDriver установлен: $CHROMEDRIVER_PATH"
+    chromedriver --version 2>/dev/null | head -1 || echo "   (версия недоступна через --version)"
+elif [ -f "/usr/lib/chromium-browser/chromedriver" ]; then
+    CHROMEDRIVER_PATH="/usr/lib/chromium-browser/chromedriver"
+    echo "✅ ChromeDriver найден: $CHROMEDRIVER_PATH"
+    # Добавляем в PATH если нужно
+    if ! grep -q "/usr/lib/chromium-browser" /etc/environment 2>/dev/null; then
+        echo "   💡 Совет: добавьте в PATH: export PATH=\$PATH:/usr/lib/chromium-browser"
+    fi
+elif [ -f "/usr/bin/chromedriver" ]; then
+    CHROMEDRIVER_PATH="/usr/bin/chromedriver"
+    echo "✅ ChromeDriver найден: $CHROMEDRIVER_PATH"
 else
-    echo "⚠️  ChromeDriver не найден в PATH, но может быть доступен через chromium-chromedriver"
+    echo "⚠️  ChromeDriver не найден в стандартных местах"
+    echo "   Попробуйте: sudo apt install chromium-chromedriver"
 fi
 
 if command -v python3 &> /dev/null; then

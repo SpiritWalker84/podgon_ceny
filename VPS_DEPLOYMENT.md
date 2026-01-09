@@ -20,23 +20,49 @@ sudo apt install -y python3 python3-pip python3-venv
 ```
 
 ### 1.3 Установка Chrome/Chromium и ChromeDriver
+
+**Вариант 1: Chromium (рекомендуется, проще)**
 ```bash
-# Установка Chromium
+# Установка Chromium и ChromeDriver из репозитория
 sudo apt install -y chromium-browser chromium-chromedriver
 
-# Или установка Google Chrome (альтернатива)
+# Проверка установки
+chromium-browser --version
+chromedriver --version
+
+# Если chromedriver не найден в PATH, используйте полный путь:
+# /usr/lib/chromium-browser/chromedriver
+# Или добавьте в PATH:
+export PATH=$PATH:/usr/lib/chromium-browser
+```
+
+**Вариант 2: Google Chrome (если нужен именно Chrome)**
+```bash
+# Установка Google Chrome
 wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
 sudo dpkg -i google-chrome-stable_current_amd64.deb
 sudo apt-get install -f -y
 
-# Установка ChromeDriver для Chrome
-CHROME_VERSION=$(google-chrome --version | grep -oP '\d+\.\d+\.\d+')
-CHROMEDRIVER_VERSION=$(curl -s "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_${CHROME_VERSION%.*}")
-wget https://chromedriver.storage.googleapis.com/${CHROMEDRIVER_VERSION}/chromedriver_linux64.zip
-unzip chromedriver_linux64.zip
-sudo mv chromedriver /usr/local/bin/
-sudo chmod +x /usr/local/bin/chromedriver
-rm chromedriver_linux64.zip
+# Установка ChromeDriver через новый Chrome for Testing API
+CHROME_VERSION=$(google-chrome --version | grep -oP '\d+\.\d+\.\d+' | head -1 | cut -d. -f1)
+if [ -z "$CHROME_VERSION" ]; then
+    CHROME_VERSION="131"  # Примерная версия, обновите при необходимости
+fi
+
+# Получаем версию через новый API
+CHROMEDRIVER_VERSION=$(curl -s "https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions.json" | grep -oP '"version": "\K[^"]+' | head -1)
+
+if [ ! -z "$CHROMEDRIVER_VERSION" ]; then
+    echo "Скачиваю ChromeDriver версии $CHROMEDRIVER_VERSION..."
+    wget "https://storage.googleapis.com/chrome-for-testing-public/${CHROMEDRIVER_VERSION}/linux64/chromedriver-linux64.zip" -O chromedriver_linux64.zip
+    unzip chromedriver_linux64.zip
+    sudo mv chromedriver-linux64/chromedriver /usr/local/bin/
+    sudo chmod +x /usr/local/bin/chromedriver
+    rm -rf chromedriver-linux64 chromedriver_linux64.zip
+else
+    echo "⚠️  Не удалось автоматически определить версию ChromeDriver"
+    echo "   Используйте: sudo apt install chromium-chromedriver"
+fi
 ```
 
 ### 1.4 Установка дополнительных зависимостей
@@ -258,12 +284,19 @@ chrome_options.add_argument("--no-sandbox")
 
 **Решение:**
 ```bash
-# Обновите ChromeDriver
-CHROMEDRIVER_VERSION=$(curl -s "https://chromedriver.storage.googleapis.com/LATEST_RELEASE")
-wget https://chromedriver.storage.googleapis.com/${CHROMEDRIVER_VERSION}/chromedriver_linux64.zip
-unzip chromedriver_linux64.zip
-sudo mv chromedriver /usr/local/bin/
-sudo chmod +x /usr/local/bin/chromedriver
+# Вариант 1: Переустановите через apt (рекомендуется)
+sudo apt remove chromium-chromedriver
+sudo apt install chromium-chromedriver
+
+# Вариант 2: Обновите ChromeDriver вручную через новый API
+CHROMEDRIVER_VERSION=$(curl -s "https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions.json" | grep -oP '"version": "\K[^"]+' | head -1)
+if [ ! -z "$CHROMEDRIVER_VERSION" ]; then
+    wget "https://storage.googleapis.com/chrome-for-testing-public/${CHROMEDRIVER_VERSION}/linux64/chromedriver-linux64.zip" -O chromedriver_linux64.zip
+    unzip chromedriver_linux64.zip
+    sudo mv chromedriver-linux64/chromedriver /usr/local/bin/
+    sudo chmod +x /usr/local/bin/chromedriver
+    rm -rf chromedriver-linux64 chromedriver_linux64.zip
+fi
 ```
 
 ## Шаг 7: Мониторинг и уведомления
