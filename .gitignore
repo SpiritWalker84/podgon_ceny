@@ -1,0 +1,53 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+
+# Чувствительные данные
+.env
+.env.local
+wb_cookies.pkl
+wb_cookies.pkl.json
+wb_cookies.pkl.storage.json
+wb_cookies.json
+
+# Профиль браузера
+wb_browser_profile/
+
+# Excel файлы с данными
+*.xlsx
+*.xls
+!*.xlsx.example
+!*.xls.example
+
+# CSV файлы с данными (если содержат чувствительную информацию)
+# Раскомментируйте если нужно исключить:
+# *.csv
+
+# Логи
+*.log
+logs/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Временные файлы
+*.tmp
+*.bak
+*.cache
+
