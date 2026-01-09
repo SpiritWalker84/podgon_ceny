@@ -67,19 +67,32 @@ apt install -y chromium-browser chromium-chromedriver
 
 # Установка дополнительных зависимостей для Chrome
 echo "[4/6] Установка дополнительных библиотек для Chrome..."
-apt install -y \
-    xvfb \
-    libxss1 \
-    libgconf-2-4 \
-    libxrandr2 \
-    libasound2 \
-    libpangocairo-1.0-0 \
-    libatk1.0-0 \
-    libcairo-gobject2 \
-    libgtk-3-0 \
-    libgdk-pixbuf2.0-0 \
-    fonts-liberation \
-    libappindicator3-1
+
+# Определяем версию Ubuntu для совместимости
+UBUNTU_VERSION=$(lsb_release -rs 2>/dev/null || echo "22.04")
+UBUNTU_MAJOR=$(echo $UBUNTU_VERSION | cut -d. -f1)
+
+# Базовые пакеты (общие для всех версий)
+BASE_PACKAGES="xvfb libxss1 libxrandr2 libpangocairo-1.0-0 libcairo-gobject2 libgdk-pixbuf2.0-0 fonts-liberation libappindicator3-1"
+
+# Пакеты для Ubuntu 24.04+ (с суффиксом t64)
+if [ "$UBUNTU_MAJOR" -ge 24 ]; then
+    echo "  [INFO] Обнаружена Ubuntu 24.04+, используем новые имена пакетов..."
+    PACKAGES="$BASE_PACKAGES libatk1.0-0t64 libgtk-3-0t64 libasound2t64"
+    # libgconf-2-4 не нужен в новых версиях или заменен
+    PACKAGES="$PACKAGES libgconf-2-4t64 2>/dev/null" || true
+else
+    echo "  [INFO] Ubuntu < 24.04, используем старые имена пакетов..."
+    PACKAGES="$BASE_PACKAGES libatk1.0-0 libgtk-3-0 libasound2 libgconf-2-4"
+fi
+
+# Устанавливаем пакеты (игнорируем ошибки для опциональных)
+apt install -y $PACKAGES || {
+    echo "  [WARN] Некоторые пакеты не установились, пробуем без опциональных..."
+    # Пробуем без libgconf (он может быть не нужен)
+    apt install -y $BASE_PACKAGES libatk1.0-0t64 libgtk-3-0t64 libasound2t64 2>/dev/null || \
+    apt install -y $BASE_PACKAGES libatk1.0-0 libgtk-3-0 libasound2 2>/dev/null || true
+}
 
 # Проверка установки
 echo "[5/6] Проверка установки..."
